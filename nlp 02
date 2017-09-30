@@ -1,0 +1,34 @@
+from nltk.corpus import words
+import operator
+
+correct_spellings = words.words()
+
+
+def a1(entries=['cormulent', 'incendenece', 'validrate']):
+    result = []
+    for entry in entries:
+        spell_list = [spell for spell in correct_spellings if spell.startswith(entry[0]) and len(spell) > 2]
+        dist_list = [(spell, nltk.jaccard_distance(set(nltk.ngrams(entry, n=3)), set(nltk.ngrams(spell, n=3)))) for spell in spell_list]
+        result.append(sorted(dist_list, key=operator.itemgetter(1))[0][0])
+    
+    return result 
+    
+def a2(entries=['cormulent', 'incendenece', 'validrate']):
+    result = []
+    import operator
+    for entry in entries:
+        spell_list = [spell for spell in correct_spellings if spell.startswith(entry[0]) and len(spell) > 2]
+        dist_list = [(spell, nltk.jaccard_distance(set(nltk.ngrams(entry, n=4)), set(nltk.ngrams(spell, n=4)))) for spell in spell_list]
+        result.append(sorted(dist_list, key=operator.itemgetter(1))[0][0])
+    
+    return result  
+    
+def a3(entries=['cormulent', 'incendenece', 'validrate']):
+    result = []
+    import operator
+    for entry in entries:
+        spell_list = [spell for spell in correct_spellings if spell.startswith(entry[0]) and len(spell) > 2]
+        dist_list = [(spell, nltk.edit_distance(entry, spell, transpositions=True)) for spell in spell_list]
+        result.append(sorted(dist_list, key=operator.itemgetter(1))[0][0])
+    
+    return result    
