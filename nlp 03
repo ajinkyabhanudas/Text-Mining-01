@@ -1,0 +1,140 @@
+#code in question
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+import operator
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import roc_auc_score
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+
+
+X_train, X_test, y_train, y_test = train_test_split(spam_data['text'], 
+                                                    spam_data['target'], 
+                                                    random_state=0)
+                                                    
+                                                    
+#Percentage of the documents in spam_data are spam     
+perc_spam=len(spam_data[spam_data['target'] == 1]) / len(spam_data) * 100
+
+# longest token in the vocabulary
+def longest_token():
+    
+    vect = CountVectorizer()
+    vect.fit(X_train)
+    
+    return sorted([(token, len(token)) for token in vect.vocabulary_.keys()], key=operator.itemgetter(1), reverse=True)[0][0] 
+    
+
+# AUC score
+def  AUC_score1():
+    vect1 = CountVectorizer()
+    X_trainTform = vect1.fit_transform(X_train)
+    X_testTform= vect1.transform(X_test)
+
+    clf = MultinomialNB(alpha=0.1)
+    clf.fit(X_trainTform, y_train)
+    y_pred = clf.predict(X_testTform)
+    
+    return roc_auc_score(y_test, y_pred)
+    
+    
+def AUC_score2():
+    vect = TfidfVectorizer(min_df=3)
+    X_train_transformed = vect.fit_transform(X_train)
+    X_test_transformed = vect.transform(X_test)
+
+    clf = MultinomialNB(alpha=0.1)
+    clf.fit(X_train_transformed, y_train)
+
+    
+    y_pred = clf.predict(X_test_transformed)
+
+    return roc_auc_score(y_test, y_pred)
+        
+
+#The average length of documents (number of characters) for not spam and spam documents
+
+def avg_doc():
+    spam_data['length'] = spam_data['text'].apply(lambda x:len(x))
+    
+    return (np.mean(spam_data['length'][spam_data['target'] == 0]), np.mean(spam_data['length'][spam_data['target'] == 1]))
+    
+
+def add_feature(X, feature_to_add):
+    """
+    Returns sparse feature matrix with added feature.
+    feature_to_add can also be a list of features.
+    """
+    from scipy.sparse import csr_matrix, hstack
+    return hstack([X, csr_matrix(feature_to_add).T], 'csr')
+
+#Fit and transform the training data X_train using a Tfidf Vectorizer ignoring terms that have a document frequency strictly lower than
+
+def fit_transform1():
+    vec = TfidfVectorizer(min_df=5)
+
+    X_train_transformed = vec.fit_transform(X_train)
+    X_train_transformed_length = add_feature(X_train_transformed, X_train.str.len())
+    X_test_transformed = vec.transform(X_test)
+    X_test_transformed_length = add_feature(X_test_transformed, X_test.str.len())
+
+    clf = SVC(C=10000)
+    clf.fit(X_train_transformed_length, y_train)
+    y_pred = clf.predict(X_test_transformed_length)
+    
+    return roc_auc_score(y_test, y_pred)    
+    
+#The average number of digits per document for not spam and spam documents
+def avg_dperdoc():
+    spam_data['length'] = spam_data['text'].apply(lambda x: len(''.join([a for a in x if a.isdigit()])))
+    
+    return (np.mean(spam_data['length'][spam_data['target'] == 0]), np.mean(spam_data['length'][spam_data['target'] == 1]))
+ 
+def tfidf_vec():
+    vect3= TfidfVectorizer(min_df=5, ngram_range=[1,3])
+
+    X_train_t = vect3.fit_transform(X_train)
+    X_train_tlength = add_feature(X_train_t, [X_train.str.len(),X_train.apply(lambda x: len(''.join([a for a in x if a.isdigit()])))])
+    X_test_t = vect3.transform(X_test)
+    X_test_tlength = add_feature(X_test_t, [X_test.str.len(),X_test.apply(lambda x: len(''.join([a for a in x if a.isdigit()])))])
+
+    clf = LogisticRegression(C=100)
+    clf.fit(X_train_tlength, y_train)
+    y_pred= clf.predict(X_test_tlength)
+
+    return roc_auc_score(y_test, y_pred)
+    
+#The average number of non-word characters    
+def non_wordchars():
+    spam_data['length'] = spam_data['text'].str.findall(r'(\W)').str.len()
+    
+    nwc=(np.mean(spam_data['length'][spam_data['target'] == 0]), np.mean(spam_data['length'][spam_data['target'] == 1]))
+    
+    return nwc
+
+def fit_transform2():
+    vect = CountVectorizer(min_df=5, analyzer='char_wb', ngram_range=[2,5])
+
+    X_train_t = vect.fit_transform(X_train)
+    X_train_tlength = add_feature(X_train_t, [X_train.str.len(),X_train.apply(lambda x: len(''.join([a for a in x if a.isdigit()]))),X_train.str.findall(r'(\W)').str.len()])
+
+    X_test_t = vect.transform(X_test)
+    X_test_tlength = add_feature(X_test_t, [X_test.str.len(),X_test.apply(lambda x: len(''.join([a for a in x if a.isdigit()]))),X_test.str.findall(r'(\W)').str.len()])
+
+    clf = LogisticRegression(C=100)
+    clf.fit(X_train_tlength, y_train)
+    y_pred = clf.predict(X_test_tlength)
+    auc = roc_auc_score(y_test, y_pred)
+
+    feature_names = np.array(vect.get_feature_names() + ['length_of_doc', 'digit_count', 'non_word_char_count'])
+    sorted_coef_index = clf.coef_[0].argsort()
+    smallest = feature_names[sorted_coef_index[:10]]
+    largest = feature_names[sorted_coef_index[:-11:-1]]
+    return (auc, list(smallest), list(largest))
+    
+
+
+     
+    
