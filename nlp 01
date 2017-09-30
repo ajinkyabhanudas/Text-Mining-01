@@ -1,0 +1,39 @@
+##code in question
+import nltk
+import pandas as pd
+import numpy as np
+
+with open('moby.txt', 'r') as f:
+    moby_raw = f.read()
+ 
+moby_tokens = nltk.word_tokenize(moby_raw)
+text1 = nltk.Text(moby_tokens)
+
+#Lexical diversity of the given text input
+ldiv = len(set(nltk.word_tokenize(moby_raw))) / len(nltk.word_tokenize(moby_raw))
+
+# x percentage of tokens is 'whale'or 'Whale'
+perc = (text1.vocab()['whale'] + text1.vocab()['Whale']) / len(nltk.word_tokenize(moby_raw)) * 100
+
+#The 20 most frequently occurring (unique) tokens in the text, their frequency
+freqtokens = sorted(text1.vocab().items(), key=operator.itemgetter(1), reverse=True)[:20]
+
+#Tokens having a length of greater than 5 and frequency of more than 150
+lg5 = sorted([token for token, freq in text1.vocab().items() if len(token) > 5 and freq > 150])
+
+# The longest word in text1 and that word's length
+lwt = sorted([(token, len(token))for token, freq in text1.vocab().items()], key=operator.itemgetter(1), reverse=True)[0]
+
+#Unique words which have a frequency of more than 2000 along wiht thier frequency
+mt2k = sorted([(freq, token) for token, freq in text1.vocab().items() if freq > 2000 and token.isalpha()], key=operator.itemgetter(0), reverse=True)
+
+#Average number of tokens per sentence
+avgtokens = np.mean([len(nltk.word_tokenize(sent)) for sent in nltk.sent_tokenize(moby_raw)])
+
+#The 5 most frequent parts of speech in this text ,their frequency
+mfps = sorted(Counter([tag for token, tag in nltk.pos_tag(text1)]).items(), key=operator.itemgetter(1), reverse=True)[:5]
+
+
+
+
+
